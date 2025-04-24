@@ -1,0 +1,4 @@
+import {Mount} from "@protorians/widgets";
+'view:import';
+
+Mount('VaubanView', ()=>{ return 'view:bootstrapper'; })
