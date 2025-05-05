@@ -10,7 +10,9 @@
   },
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsc"
+    "build": "tsc",
+    "make:executable": "chmod +x ./build/bin/vauban.js",
+    "postinstall": "npm run make:executable"
   },
   "exports": {
     ".": "./build/index.js",
@@ -22,7 +24,12 @@
     "backend",
     "serve"
   ],
-  "author": "",
+  "author": "Y. Yannick GOBOU",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/protorians/vauban.git",
+    "directory": "source"
+  },
   "license": "ISC",
   "dependencies": {
     "@fastify/express": "^4.0.2",
@@ -35,12 +42,15 @@
     "es-module-lexer": "^1.6.0",
     "esbuild": "^0.25.2",
     "fastify": "^5.2.2",
+    "js-yaml": "^4.1.0",
     "socket.io-client": "^4.8.1",
     "ts-node": "^10.9.2",
+    "vite": "^6.2.5",
     "ws": "^8.18.1"
   },
   "devDependencies": {
-    "typescript": "5.8.3",
-    "vite": "^6.2.5"
+    "@types/js-yaml": "^4.0.9",
+    "rollup-plugin-terser": "^7.0.2",
+    "typescript": "5.8.3"
   }
 }
