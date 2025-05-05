@@ -10,9 +10,7 @@
   },
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsc",
-    "make:executable": "chmod +x ./build/bin/vauban.js",
-    "postinstall": "npm run make:executable"
+    "build": "tsc"
   },
   "exports": {
     ".": "./build/index.js",
