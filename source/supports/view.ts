@@ -2,9 +2,9 @@ import path from "node:path";
 import {Vauban} from "./vauban.js";
 import fs from "node:fs";
 import {Presets} from "./presets.js";
-import {IVaubanViewOptions} from "../types/view.js";
+import {IBackendView, IBackendViewOptions} from "../types/view.js";
 import {ViewFragment} from "../enums/view.js";
-import {VaubanException} from "./exception.js";
+import {BackendException} from "./exception.js";
 import {FileManager} from "./fs.js";
 import {HMR} from "./hmr.js";
 import type {IModularDefaultSource, IModularView} from "../types/index.js";
@@ -14,7 +14,7 @@ import {VaubanUri} from "../common/uri.js";
 import {Logger} from "./logger.js";
 
 
-export class VirtualView {
+export class BackendView implements IBackendView {
 
     readonly uri: string;
     readonly filename: string;
@@ -25,19 +25,18 @@ export class VirtualView {
 
     constructor(
         public readonly id: string,
-        protected _options: Partial<IVaubanViewOptions> = {},
+        protected _options: IBackendViewOptions = {} as IBackendViewOptions,
     ) {
         this._options.extension = this._options.extension || '.js';
 
         this.uri = `${id?.toString().endsWith('/') ? `${id}${ViewFragment.Index}` : id}`
         this.filename = `${this.uri}${this._options.extension}`
-        this.pathname = path.join(VirtualView.directory, this.filename);
+        this.pathname = path.join(BackendView.directory, this.filename);
         this.dirname = path.dirname(this.pathname);
         this.basename = path.basename(this.pathname);
-        // this.mainFile = path.join(VirtualView.directory, `${id?.toString().endsWith('/') ? `${id}${ViewFragment.Index}` : id}.main${this._options.extension}`)
     }
 
-    get options(): Partial<Readonly<IVaubanViewOptions>> {
+    get options(): Readonly<IBackendViewOptions> {
         return this._options || {};
     }
 
@@ -47,90 +46,68 @@ export class VirtualView {
 
     path(name: string | ViewFragment): string {
         name = name.toString().replace(/[\/\\]/g, '');
-        return path.join(VirtualView.directory, this.id, `${name}${this._options.extension}`);
+        return path.join(BackendView.directory, this.id, `${name}${this._options.extension}`);
     }
 
-    preset(): string {
-        return Presets.view().toString()
-            .replace(/'view:import';/gi, `import view from "./${this.basename}";`)
-            .replace(/'view:bootstrapper'/gi, `view.construct({})`)
-    }
+    async send<T extends Record<any, any>>(params: T): Promise<string> {
+        return new Promise<string>(async (resolve, reject) => {
+            try {
+                if (!this.code.trim().length) await this.render(params)
 
-    createMain(): this {
-        const file = this.path(ViewFragment.Main);
-        FileManager.create(file, this.preset())
-        return this;
-    }
+                fs.writeFile(
+                    path.join(this.dirname, 'index.html'),
+                    this.code,
+                    {encoding: "utf8"},
+                    (err) => {
+                        if (err) Logger.error('View', 'failed to create view support')
+                    }
+                )
 
-    async send<T extends Record<any, any>>(params: T): Promise<void> {
-        if (!this.code.trim().length) await this.render(params)
-
-        fs.writeFile(
-            path.join(this.dirname, 'index.html'),
-            this.code,
-            {encoding: "utf8"},
-            (err) => {
-                if (err) Logger.error('View', 'failed to create view support')
+                this.options
+                    .response
+                    ?.type('text/html')
+                    .status(200)
+                    .send(this.code);
+                resolve(this.code);
+            } catch (err) {
+                reject(err)
             }
-        )
-
-        this.options
-            .response
-            ?.type('text/html')
-            .status(200)
-            .send(this.code);
+        })
     }
 
-    async import() {
-        return await HMR.import<IModularView>(this.pathname);
+    async import(): Promise<IModularView> {
+        return new Promise<IModularView>(async (resolve, reject) => {
+            try {
+                const mod = await HMR.import<IModularView>(this.pathname);
+                if (mod) resolve(mod)
+                else reject(undefined)
+            } catch (e) {
+                reject(e)
+            }
+        })
     }
 
     async mockup(): Promise<IModularDefaultSource> {
         const mockupFile = this.path(ViewFragment.Mockup);
         if (!fs.existsSync(mockupFile)) {
-            throw new VaubanException(`Mockup not found`);
+            throw new BackendException(`Mockup not found`);
         }
 
         const mod = await HMR.import<IModularDefaultSource>(mockupFile);
         if (typeof mod === 'undefined') {
-            throw new VaubanException(`Mockup Module not found`);
+            throw new BackendException(`Mockup Module not found`);
         }
         if (typeof mod.default !== 'function') {
-            throw new VaubanException(`Mockup has not a main function`);
+            throw new BackendException(`Mockup has not a main function`);
         }
         return mod;
     }
 
-    async render<T extends Record<any, any>>(params: T): Promise<string> {
-        this.createMain()
 
-        const view = await this.import();
-
-        if (typeof view === 'undefined') {
-            throw new VaubanException(`View not found`);
-        }
-
-        if (typeof view.default !== 'function') {
-            throw new VaubanException(`View has not a main function`);
-        }
-
-
-        const states = {} as any;
-        const props = params;
-        const widget = view.default.construct(props as Object);
-
-        if (typeof widget === 'undefined') {
-            throw new VaubanException(`No widget rendered`);
-        }
-
-        const context = new ContextWidget<any, any>(widget, props, states)
-        context.root = widget;
-        WidgetBuilder(widget, context);
-        const rendering = (await widget.serverElement?.render()) || '';
-        const mockup: string = await (await this.mockup()).default(`<vauban-view style="opacity:0;">${rendering}</vauban-view>`);
+    async build(content: string): Promise<string> {
+        const mockup: string = await (await this.mockup()).default(`<vauban-view style="opacity:0;">${content}</vauban-view>`);
 
         const isProduction: boolean = Vauban.config.$.mode === ServerRuntimeMode.Production;
-
         this.code = mockup
             .replace(/{{Vauban.Requirement.Head}}/gi, [
                 `<meta vauban:client name="config:host" content="${Vauban.config.$.host}" />`,
@@ -139,28 +116,71 @@ export class VirtualView {
             .replace(
                 /{{Vauban.Requirement.Body}}/gi,
                 [
-                    `<script type="module" vauban:view="${this.id}" src="${this.path(ViewFragment.Main)}"></script>`,
                     !isProduction
-                        ? `<script type="module">const m = "message", e = "addEventListener"; (new WebSocket('ws://localhost:${this.options.server?.options.port}${VaubanUri.hmrWebSocket}'))[e](m, e =>{ e = JSON.parse(e.data||'{}'); (typeof e.type === 'string' && typeof e.file === 'string' && e.type === "hmr") ? history.go(0) : void(0); }) </script>` : ''
+                     ? `<script type="module" vauban:view="${this.id}" src="${this.path(ViewFragment.Main)}"></script>`
+                     : `<script type="module" vauban:view="${this.id}" src="./${ViewFragment.Main}.js"></script>`,
+
+                    !isProduction
+                        ? `<script type="module">const m = "message", e = "addEventListener"; (new WebSocket('ws://${this.options.server?.options.host || 'localhost'}:${this.options.server?.options.port || '80'}${VaubanUri.hmrWebSocket}'))[e](m, e =>{ e = JSON.parse(e.data||'{}'); (typeof e.type === 'string' && typeof e.file === 'string' && e.type === "hmr") ? window.location.reload() : void(0); }) </script>`
+                        : ''
                 ].join('')
             );
 
         return this.code;
     }
 
-    async file<T>(name: string): Promise<T> {
-        const file = this.path(name);
-        if (!fs.existsSync(file)) throw new VaubanException(`Fragment < ${file} > not found`)
-        return await import(file);
+    async render<T extends Record<any, any>>(params: T): Promise<string> {
+        BackendView.createMain(this.path(ViewFragment.Main), this.basename)
+
+        const view = await this.import().catch(err => {
+            throw new BackendException(err || `View not found`)
+        });
+
+        if (typeof view.default !== 'function') {
+            throw new BackendException(`View has not a main function`);
+        }
+
+        const states = {} as any;
+        const props = params;
+        const widget = view.default.construct(props as Object);
+
+        if (typeof widget === 'undefined') {
+            throw new BackendException(`No widget rendered`);
+        }
+
+        const context = new ContextWidget<any, any>(widget, props, states)
+        context.root = widget;
+        WidgetBuilder(widget, context);
+        const rendering = (await widget.serverElement?.render()) || '';
+
+        await this.build(rendering);
+
+        return this.code;
     }
 
-    async fragment<T>(name: ViewFragment): Promise<T> {
+    async file<T>(name: string): Promise<T | undefined> {
+        const file = this.path(name);
+        if (!fs.existsSync(file)) throw new BackendException(`Fragment < ${file} > not found`)
+        return await HMR.import<T>(file);
+    }
+
+    async fragment<T>(name: ViewFragment): Promise<T | undefined> {
         return await this.file<T>(name.toString())
     }
 
-
     static get directory(): string {
         return path.join(Vauban.appDir, Vauban.cacheDir, Vauban.directories.views!)
+    }
+
+    static createMain(output: string, basename?: string): typeof this {
+        FileManager.create(output, this.preset(basename||'index.js'))
+        return this;
+    }
+
+    static preset(basename: string): string {
+        return Presets.view().toString()
+            .replace(/'view:import';/gi, `import view from "./${basename}";`)
+            .replace(/'view:bootstrapper'/gi, `view.construct({})`)
     }
 
 }

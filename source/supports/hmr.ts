@@ -7,6 +7,7 @@ import {HMRContext} from "../enums/hmr.js";
 import {IHMRCompilate} from "../types/index.js";
 import {Logger} from "./logger.js";
 import {serverActionWebSocketPlugin} from "../compiler-capabilities/server-action.js";
+import {ViteDevServer, WebSocket} from "vite";
 
 export class HMR {
 
@@ -83,38 +84,17 @@ export class HMR {
         }
     }
 
-    static async prebuild() {
-        return new Promise<void>(async (resolve, reject) => {
-            // Logger.highlight("App", 'wait until...');
-
-            try {
-                exec(`cd ${Vauban.appDir} && npx tsc`, (err, stdout) => {
-                    if (err) {
-                        Logger.error('App', 'Build failed, check your project build');
-                        Logger.error('Stack', stdout);
-                        process.exit(1);
-                    }
-                    // Logger.info("App", 'Ready!');
-                    resolve()
-                })
-            } catch (e) {
-                Logger.error('App', e)
-                reject(e)
-            }
-        })
-    }
-
     static watcher() {
         const directories = Vauban.directories;
         const sourcedir = path.join(Vauban.appDir, directories.source || 'source');
         // const outputDir = path.join(Vauban.appDir, Vauban.cacheDir, directories.source || 'source')
 
         exec(
-            `cd ${sourcedir} && tsc --watch`,
+            `cd ${sourcedir} && npx tsc --watch`,
             (error, stdout, stderr) => {
                 if (error) Logger.error('Error', error)
-                Logger.error('stderr', stderr)
-                Logger.say('Stdout', stdout)
+                Logger.error('ERROR', stderr)
+                Logger.say('I', stdout)
             }
         );
 
@@ -123,5 +103,15 @@ export class HMR {
         //     .watch(`${sourcedir}`, {persistent: true})
         //     .on('change', (f) => HMR.reload(sourcedir, path.relative(sourcedir, f), outputDir))
         //     .on('error', (e) => Logger.error('TASK', e))
+    }
+
+
+    static gateway(vite: ViteDevServer, socket: WebSocket.WebSocket, fileHost: string) {
+        vite.watcher.on('change', async (file) => {
+            if (file !== fileHost && file.endsWith('.js')) {
+                await HMR.replace(file)
+                socket.send(JSON.stringify({type: 'hmr', action: 'reload', file,}))
+            }
+        })
     }
 }

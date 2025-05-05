@@ -1,10 +1,12 @@
 import {IConfiguration} from "../types/configs.js";
-import {IServerBootstrapper, IServerConfig, IServerDirectories} from "../types/index.js";
-import {VaubanServer} from "./server.js";
+import {IServerBootstrapper, IBackendConfig, IBackendDirectories} from "../types/index.js";
+import {Backend} from "./backend.js";
 import {Configuration} from "./config.js";
 import path from "node:path";
 import {TSConfig} from "./tsconfig.js";
 import {ServerRuntimeMode} from "../enums/server.js";
+import {ConfigurationLoader} from "../enums/configuration.js";
+import fs from "node:fs";
 
 const __dirname = (import.meta.dirname);
 
@@ -14,12 +16,12 @@ export class Vauban {
     static directory: string = "";
     static appDir: string = "";
     static workDir: string = "";
-    static buildDir: string = "";
+    static staticViewsDir: string = "";
     static pipelineDir: string = "";
     static cacheViewsDir: string = "";
     static cacheDir: string = "";
-    static configFile: string = "vauban.config.js";
-    static config: IConfiguration<IServerConfig> = {} as IConfiguration<IServerConfig>;
+    static configFile: string = "vauban.config";
+    static config: IConfiguration<IBackendConfig> = {} as IConfiguration<IBackendConfig>;
 
     static requirements(): typeof this {
 
@@ -29,14 +31,14 @@ export class Vauban {
         if (!this.cacheDir) TSConfig.initialize();
 
         this.workDir = path.join(this.appDir, this.cacheDir, '..');
-        this.buildDir = path.join(this.appDir, this.slug, 'build');
+        this.staticViewsDir = path.join(this.appDir, this.slug, 'statics', 'views');
         this.pipelineDir = path.join(this.appDir, this.slug, 'pipeline');
         this.cacheViewsDir = path.join(this.appDir, this.slug, 'views');
 
         return this;
     }
 
-    static get _config(): IServerConfig {
+    static get _config(): IBackendConfig {
         return {
             mode: ServerRuntimeMode.Production,
             title: 'Vauban Backend Server',
@@ -55,14 +57,14 @@ export class Vauban {
                 videos: "./source/assets/videos",
                 sounds: "./source/assets/sounds",
                 svg: "./source/assets/svg",
-                configs: "./configs",
-                database: "./database",
-                entities: "./source/entities",
-                factories: "./database/factories",
-                migrations: "./database/migrations",
-                repositories: "./source/repositories",
-                schemas: "./database/schemas",
-                seeders: "./database/seeders",
+                configs: "./source/configs",
+                database: "./source/database",
+                entities: "./source/database/entities",
+                factories: "./source/database/factories",
+                migrations: "./source/database/migrations",
+                repositories: "./source/database/repositories",
+                schemas: "./source/database/schemas",
+                seeders: "./source/database/seeders",
                 components: "./source/components",
                 helpers: "./source/helpers",
                 payloads: "./source/payloads",
@@ -73,17 +75,31 @@ export class Vauban {
         }
     }
 
-    static get directories(): Partial<IServerDirectories> {
+    static get directories(): Partial<IBackendDirectories> {
         return {
             ...(this._config).directories,
             ...(this.config.export().directories || {}),
         }
     }
 
-    static async initialize(): Promise<IConfiguration<IServerConfig>> {
+    static get configType() {
+        return [
+            ...Object.values(ConfigurationLoader)
+                .filter(type => {
+                    return fs.existsSync(`${path.join(Vauban.appDir, this.configFile)}.${type}`)
+                })
+        ][0] || ConfigurationLoader.JSON;
+    }
+
+    static async initialize(): Promise<IConfiguration<IBackendConfig>> {
         this.requirements();
-        this.config = await (new Configuration<IServerConfig>(path.join(Vauban.appDir, this.cacheDir, this.configFile)))
-            .sync(this._config);
+        const type = this.configType;
+        this.config = await (
+            new Configuration<IBackendConfig>(
+                path.join(Vauban.appDir, `${this.configFile}.${type}`),
+                {loader: type,}
+            )
+        ).sync(this._config);
         return this.config;
     }
 
@@ -92,7 +108,7 @@ export class Vauban {
         TSConfig.initialize();
         this.config.set('port', parseInt((this.config.$.port || 5711).toString()));
 
-        await (new VaubanServer(
+        await (new Backend(
             this.config.$.name || 'com.vauban.server'
         ))
             .port(this.config.$.port as number)

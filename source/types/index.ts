@@ -1,6 +1,6 @@
 export type * from "./configs.js"
 export type * from "./middleware.js"
-export type * from "./server.js"
+export type * from "./backend.js"
 export type * from "./plugins.js"
 export type * from "./module.js"
 export type * from "./route.js"

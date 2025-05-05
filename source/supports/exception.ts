@@ -1,2 +1,2 @@
-export class VaubanException extends Error {
+export class BackendException extends Error {
 }

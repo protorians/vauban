@@ -1,7 +1,7 @@
 import {
     IMiddleware,
     IMiddlewareCallable,
-    IServerIncomingPayload,
+    IBackendIncomingPayload,
 } from "../types/index.js";
 import {TreatmentQueueStatus} from "@protorians/core";
 import {RecordStack} from "./instance.js";
@@ -19,7 +19,7 @@ export class Middlewares {
         return this;
     }
 
-    static async run(payload: IServerIncomingPayload) {
+    static async run(payload: IBackendIncomingPayload) {
         for (const middleware of this.stack.values()) {
             const next = await middleware.callable(payload);
             if (next === TreatmentQueueStatus.Exit) break;

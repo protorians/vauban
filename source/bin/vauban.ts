@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
-import {ArcaneEnv, ArcaneManager, IPackage, Terminal} from "@protorians/arcane-core";
+import {ArcaneManager, IPackage} from "@protorians/arcane-core";
 import {dirname} from "path";
-import activateVerbose = ArcaneEnv.activateVerbose;
-import path from "node:path";
-import {HMR} from "../supports/hmr.js";
-import {execSync} from "node:child_process";
-import {Logger, Vauban} from "../supports/index.js";
-import {TSConfig} from "../supports/tsconfig.js";
+import {Vauban} from "../supports/index.js";
+import {type IStartServerOption, startServerCli} from "../cli/start-server.cli.js";
+import {type IBuildServerOption, buildServerCli} from "../cli/build-server.cli.js";
+import {craftCli} from "../cli/craft.cli.js";
+import {ICraftArtifacts} from "../types/craft.js";
 
 
 const __dirname = (import.meta.dirname);
@@ -30,47 +29,97 @@ try {
     make.description(pkg.description || '')
 
     make
-        .name('dev')
-        .command('dev')
-        .description('Start Vauban server in dev mode')
-        // .option("--silent, -s", "Disable logging",)
-        .action(async () => {
-            TSConfig.initialize();
-            activateVerbose();
-            await HMR.prebuild();
-            await Vauban.initialize();
-            Terminal.Display.notice('Vauban', Vauban.config.$.mode?.toUpperCase())
-            execSync(`node ${path.join(appDir, Vauban.cacheDir, 'main.js')}`, {stdio: 'inherit'});
-        });
+        .name('VaubanStarting')
+        .command('start')
+        .description('Start Vauban Server')
+        .option('-p, --prod <boolean>', 'Start in dev mode', undefined)
+        .action(async (option: IStartServerOption) => await startServerCli(option));
 
     make
-        .name('build')
+        .name('VaubanBuilding')
         .command('build')
-        .description('Build server')
-        // .option("--silent, -s", "Disable logging",)
-        .action(async () => {
-            TSConfig.initialize();
-            activateVerbose();
-            await Vauban.initialize();
+        .description('Build Vauban project')
+        .option('-p, --prod <boolean>', 'Build in dev mode', undefined)
+        .action(async (option: IBuildServerOption) => await buildServerCli(option));
+
+    make
+        .name('VaubanCrafting')
+        .command('craft')
+        .description('Craft an option')
+        .argument('<string>', 'name of the item to craft')
+        .option('--api', 'Craft an API endpoint', undefined)
+        .option('--action', 'Craft a server action', undefined)
+        .option('--component', 'Craft a widget component', undefined)
+        .option('--config', 'Craft a config', undefined)
+        .option('--helper', 'Craft a helper', undefined)
+        .option('--service', 'Craft a service', undefined)
+        .option('--view', 'Craft a widget view', undefined)
+        .option('--theme', 'Craft a widget theme instance', undefined)
+        .action(async (identifier: string, options: ICraftArtifacts) => craftCli(identifier, options));
 
 
-            const directories = Vauban.directories;
-            const sourcedir = path.join(Vauban.appDir, directories.source || 'source');
-
-            Terminal.Display.notice('Vauban', 'Building...')
-            Logger.warn('Directory', sourcedir)
-
-            await HMR.prebuild();
-            execSync(
-                `vite build --config ${
-                    path.join(Vauban.directory, 'resources', 'vite.config.ts')
-                }`,
-                {stdio: 'inherit'}
-            );
-
-
-            // Vauban.config.set('mode', currentMode)
-        })
+    // make
+    //     .name('api')
+    //     .command('api')
+    //     .description('Create API endpoint')
+    //     .argument('<string>', 'API endpoint name')
+    //     .action((name: string) => {
+    //         console.log('Command not implemented yet :', name)
+    //     });
+    //
+    // make
+    //     .name('action')
+    //     .command('action')
+    //     .description('Create a server action')
+    //     .argument('<string>', 'Server action name')
+    //     .action((name: string) => {
+    //         console.log('Command not implemented yet :', name)
+    //     });
+    //
+    // make
+    //     .name('component')
+    //     .command('component')
+    //     .description('Create a component')
+    //     .argument('<string>', 'component name')
+    //     .action((name: string) => {
+    //         console.log('Command not implemented yet :', name)
+    //     });
+    //
+    // make
+    //     .name('config')
+    //     .command('config')
+    //     .description('Create a config')
+    //     .argument('<string>', 'config name')
+    //     .action((name: string) => {
+    //         console.log('Command not implemented yet :', name)
+    //     });
+    //
+    // make
+    //     .name('helper')
+    //     .command('helper')
+    //     .description('Create a helper')
+    //     .argument('<string>', 'helper name')
+    //     .action((name: string) => {
+    //         console.log('Command not implemented yet :', name)
+    //     });
+    //
+    // make
+    //     .name('service')
+    //     .command('service')
+    //     .description('Create a service')
+    //     .argument('<string>', 'service name')
+    //     .action((name: string) => {
+    //         console.log('Command not implemented yet :', name)
+    //     });
+    //
+    // make
+    //     .name('view')
+    //     .command('view')
+    //     .description('Create a view')
+    //     .argument('<string>', 'view name')
+    //     .action((name: string) => {
+    //         console.log('Command not implemented yet :', name)
+    //     });
 
     make.parse(argv);
 

@@ -2,6 +2,7 @@ import path from "node:path";
 import {Vauban} from "./vauban.js";
 import {HMR} from "./hmr.js";
 import {FileManager} from "./fs.js";
+import {WebSocket} from "vite";
 
 
 export class ServerActons {
@@ -43,6 +44,43 @@ export class ServerActons {
             if (fn) this.actions.set(serial, fn)
         }
         return this.actions;
+    }
+
+    static async gateway(socket: WebSocket.WebSocket) {
+        const actions = await this.getActions();
+
+        socket.on('message', async (msg: any) => {
+            try {
+                const parsed = JSON.parse(msg.toString());
+                if (typeof actions === 'undefined') return;
+                if (parsed.type !== 'action') return;
+
+                const {name, payload, requestId} = parsed;
+                const explode = name.split(':')
+                const action = actions?.get(name);
+
+                if (!action) {
+                    socket.send(JSON.stringify({
+                        type: 'error',
+                        error: `Action "${explode[1] || explode[0]}" not found.`,
+                        requestId,
+                    }))
+                    return;
+                }
+                const result = await action(payload);
+                socket.send(JSON.stringify({
+                    type: 'response',
+                    name,
+                    result,
+                    requestId,
+                }));
+            } catch (err) {
+                socket.send(JSON.stringify({
+                    type: 'error',
+                    error: (err as Error).message,
+                }));
+            }
+        });
     }
 
 }

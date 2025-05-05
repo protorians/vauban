@@ -1,5 +1,5 @@
 import {TreatmentQueueStatus} from "@protorians/core";
-import type {IServerIncomingPayload} from "./server.js";
+import type {IBackendIncomingPayload} from "./backend.js";
 
 
 export interface IMiddlewareOptions {
@@ -7,7 +7,7 @@ export interface IMiddlewareOptions {
 
 export type IMiddlewareResponse = TreatmentQueueStatus.Exit | TreatmentQueueStatus.Continue
 
-export type IMiddlewareCallable = (payload: IServerIncomingPayload) => Promise<IMiddlewareResponse>;
+export type IMiddlewareCallable = (payload: IBackendIncomingPayload) => Promise<IMiddlewareResponse>;
 
 export interface IMiddleware {
     name: string;

@@ -2,36 +2,37 @@ import type {ICollectionScheme, ISignalStack, ISignalStackCallable} from "@proto
 import type {FastifyInstance, FastifyReply, FastifyRequest} from "fastify";
 import {ServerRuntimeMode} from "../enums/server.js";
 
-export interface IServerInstance extends FastifyInstance {
+export interface IBackendInstance extends FastifyInstance {
 }
 
-export interface IServerRequest extends FastifyRequest {
+export interface IBackendRequest extends FastifyRequest {
 }
 
-export interface IServerResponse extends FastifyReply {
+export interface IBackendResponse extends FastifyReply {
 }
 
-export interface IServerOptions {
+export interface IBackendOptions {
     logger?: boolean;
     port?: number;
+    host?: string;
 }
 
-export interface IServerIncomingPayload {
-    request: IServerRequest;
-    response: IServerResponse;
+export interface IBackendIncomingPayload {
+    request: IBackendRequest;
+    response: IBackendResponse;
 }
 
-export interface IServerSignalMap {
+export interface IBackendSignalMap {
 
 }
 
-export type IServerSignal = ISignalStack<IServerSignalMap>
+export type IBackendSignal = ISignalStack<IBackendSignalMap>
 
-export type IServerSignalCallable = ISignalStackCallable<IServerSignalMap>
+export type IBackendSignalCallable = ISignalStackCallable<IBackendSignalMap>
 
-export type IServerMethods = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+export type IBackendMethods = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-export interface IServerDirectories {
+export interface IBackendDirectories {
     public: string;
     source: string;
     actions: string;
@@ -59,19 +60,19 @@ export interface IServerDirectories {
     views: string;
 }
 
-export interface IServerConfig extends ICollectionScheme {
+export interface IBackendConfig extends ICollectionScheme {
     name?: string;
     title?: string;
     host?: string;
     port?: number;
     mode?: ServerRuntimeMode;
-    directories?: Partial<IServerDirectories>;
+    directories?: Partial<IBackendDirectories>;
 }
 
-export interface IServer {
-    get instance(): IServerInstance;
+export interface IBackend {
+    get instance(): IBackendInstance;
 
-    get options(): IServerOptions;
+    get options(): IBackendOptions;
 
     logger(logger: boolean): this;
 
@@ -80,10 +81,16 @@ export interface IServer {
     start(bootstrapper?: IServerBootstrapper): Promise<this>;
 }
 
-export type IServerBootstrapper = (bootstrapper?: IServer) => Promise<void>;
+export type IServerBootstrapper = (bootstrapper?: IBackend) => Promise<void>;
 
 export type IServerPayload = {
-    server: IServer;
+    server: IBackend;
     request: FastifyRequest;
-    response: IServerResponse;
+    response: IBackendResponse;
+}
+
+export interface IBackendCraftingTemplate {
+    filename: string;
+    directory: string;
+    code: string;
 }

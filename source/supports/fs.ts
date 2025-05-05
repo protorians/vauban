@@ -28,6 +28,31 @@ export class DirectoryManager {
         })
     }
 
+    static scan(
+        directory: string,
+        options?: {
+            encoding: BufferEncoding | null,
+            withFileTypes?: false | undefined,
+            recursive?: boolean | undefined
+        } | BufferEncoding | null,
+        callback?: (file: string) => void): string[] {
+        if (!fs.existsSync(directory)) return [];
+        if (!fs.statSync(directory).isDirectory()) return [];
+
+        let files: string[] = [];
+        for (const file of fs.readdirSync(directory, options)) {
+            const filepath = path.join(directory, file);
+            if (fs.statSync(filepath).isDirectory()) {
+                files = [...files, ...this.scan(filepath, options, callback)]
+            } else {
+                files.push(file);
+                if (callback) callback(filepath);
+            }
+        }
+
+        return files;
+    }
+
 }
 
 

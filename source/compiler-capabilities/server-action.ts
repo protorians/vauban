@@ -17,24 +17,33 @@ export function sawsVitePlugin(): VitePlugin {
         name: 'vite-plugin-vauban-saws',
         enforce: 'pre',
         async transform(source, id) {
+            source = source.toString().trim()
+
             if (
-                (id.endsWith('.js')) &&
-                (source.includes('"use server"') || source.includes("'use server'"))
+                source.startsWith('"use server"') ||
+                source.startsWith("'use server'")
             ) {
-                const exportRegex = /^export\s+(async\s+)?function\s+(\w+)\s*\(/gm
-                const matches = [...source.matchAll(exportRegex)]
-                if (matches.length === 0) return;
+                if (id.endsWith('.js') || id.endsWith('.ts')) {
+                    const exportRegex = /^export\s+(async\s+)?function\s+(\w+)\s*\(/gm
+                    const matches = [...source.matchAll(exportRegex)]
 
-                const key = createHash('sha256').update(id).digest('hex').toString()
-                const actions = matches.map(m => m[2])
-                actions.forEach(fnName => manifest[`${key}:${fnName}`] = path.relative(Vauban.appDir, id))
+                    if (matches.length === 0) return;
 
-                const transformed = actions.map(fnName => `export async function ${fnName}(...a) { return new Promise((s, r) => ActionRunner.action("${key}:${fnName}", ...a).then((r) => s(r.result)).catch(err => r(err)) ) }`)
-                    .join('\n')
-                ServerActons.update(manifest);
-                return {
-                    code: `import {ActionRunner} from "${path.join(__dirname, '../clients', 'action-runner.js')}";\n${transformed}`
+                    const key = createHash('sha256').update(id).digest('hex').toString()
+                    const actions = matches.map(m => m[2])
+
+                    actions.forEach(fnName => manifest[`${key}:${fnName}`] = path.relative(Vauban.appDir, id))
+
+                    const transformed = actions.map(fnName => `export async function ${fnName}(...a) { return new Promise((s, r) => ActionDriver.action("${key}:${fnName}", ...a).then((r) => s(r.result)).catch(err => r(err)) ) }`)
+                        .join('\n')
+                    const driver = path.join(__dirname, '../clients', 'action-driver.js')
+
+                    ServerActons.update(manifest);
+                    return {
+                        code: `import {ActionDriver} from "${driver}";\n${transformed}`
+                    }
                 }
+
             }
 
             return;
@@ -65,11 +74,11 @@ export function serverActionWebSocketPlugin(): EsBuildPlugin {
                 actions.forEach(fnName => manifest[fnName] = path.relative(Vauban.appDir, args.path))
 
                 const transformed = actions.map(fnName => `
-export async function ${fnName}(...a) { return new Promise((suc, rej) => ActionRunner.action("${fnName}", ...a).then((r) => suc(r.result)).catch(err => rej(err)) ) }`)
+export async function ${fnName}(...a) { return new Promise((suc, rej) => ActionDriver.action("${fnName}", ...a).then((r) => suc(r.result)).catch(err => rej(err)) ) }`)
                     .join('\n')
 
                 return {
-                    contents: `import {ActionRunner} from "${path.join(__dirname, '../clients', 'action-runner.js')}";\n${transformed}`,
+                    contents: `import {ActionDriver} from "${path.join(__dirname, '../clients', 'action-driver.js')}";\n${transformed}`,
                     loader: path.extname(args.path).slice(1) as 'ts' | 'js',
                 }
             })

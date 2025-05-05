@@ -1,4 +1,4 @@
-import {IServerConfig} from "../types/server.js";
+import {IBackendConfig} from "../types/backend.js";
 
 export class VaubanClient {
     static get metas() {
@@ -10,7 +10,7 @@ export class VaubanClient {
         return metas;
     }
 
-    static config<K extends keyof IServerConfig>(key: K): IServerConfig[K] | null {
+    static config<K extends keyof IBackendConfig>(key: K): IBackendConfig[K] | null {
         return this.metas[`config:${key}`] || null;
     }
 }

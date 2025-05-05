@@ -1,6 +1,6 @@
 import type {IMiddlewareCallable} from "./middleware.js";
 import type {IRoutePayload} from "./route.js";
-import type { IServerSignalCallable } from "./server.js";
+import type { IBackendSignalCallable } from "./backend.js";
 
 
 
@@ -11,7 +11,7 @@ export interface IPluginOptions {
 
     middleware?: IMiddlewareCallable;
 
-    event?: IServerSignalCallable;
+    event?: IBackendSignalCallable;
 }
 
 export interface IPlugin {
