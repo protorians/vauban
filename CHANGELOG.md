@@ -1,5 +1,16 @@
 # @protorians/paladin
 
+## 0.1.5
+
+### Minor Changes
+
+- Refactor utilities into distinct namespaces for clarity
+
+### Patch Changes
+
+- Updated dependencies
+  - @protorians/widgets@0.7.0
+
 ## 0.1.4
 
 ### Patch Changes
