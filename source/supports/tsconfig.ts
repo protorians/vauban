@@ -3,6 +3,7 @@ import path from "node:path";
 import * as fs from "node:fs";
 import {Terminal} from "@protorians/arcane-core";
 import {mkdirSync} from "fs";
+import { FileUtility } from "@protorians/core";
 
 export class TSConfig {
     protected static _$: any = undefined;
@@ -21,7 +22,7 @@ export class TSConfig {
             Terminal.Display.error('TSConfig', 'Not found')
             process.exit(1);
         }
-        this._$ = JSON.parse(fs.readFileSync(file, 'utf8'));
+        this._$ = FileUtility.JsonParser(fs.readFileSync(file, 'utf8'));
         return this;
     }
 

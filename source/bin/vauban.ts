@@ -2,11 +2,14 @@
 
 import {ArcaneManager, IPackage} from "@protorians/arcane-core";
 import {dirname} from "path";
-import {Vauban} from "../supports/index.js";
+import {Vauban, Dictionary, DirectoryManager, Logger} from "../supports/index.js";
 import {type IStartServerOption, startServerCli} from "../cli/start-server.cli.js";
 import {type IBuildServerOption, buildServerCli} from "../cli/build-server.cli.js";
 import {craftCli} from "../cli/craft.cli.js";
 import {ICraftArtifacts} from "../types/craft.js";
+import {initializeCli} from "../cli/initialize.cli.js";
+import path from "node:path";
+import fs from "node:fs";
 
 
 const __dirname = (import.meta.dirname);
@@ -55,71 +58,77 @@ try {
         .option('--service', 'Craft a service', undefined)
         .option('--view', 'Craft a widget view', undefined)
         .option('--theme', 'Craft a widget theme instance', undefined)
+        .option('--entity', 'Craft a new database entity', undefined)
+        .option('--factory', 'Craft a new database factory', undefined)
+        .option('--migration', 'Craft a new database migration', undefined)
+        .option('--repository', 'Craft a new database repository', undefined)
+        .option('--seeder', 'Craft a new database seeder', undefined)
+        .option('--enum', 'Craft a new enums', undefined)
         .action(async (identifier: string, options: ICraftArtifacts) => craftCli(identifier, options));
 
 
+    make
+        .name('Database')
+        .command('database')
+        .description('Vauban Database')
+        .argument('<string> action', 'action name')
+        .action(async (action: string) => {
+            console.log('database', action)
+        });
+
+    make
+        .name('Prune')
+        .command('prune')
+        .description('Vauban Prune')
+        .option('--api', 'Prune api cache', undefined)
+        .option('--action', 'Prune action cache', undefined)
+        .option('--component', 'Prune component cache', undefined)
+        .option('--config', 'Prune config cache', undefined)
+        .option('--helper', 'Prune helper cache', undefined)
+        .option('--service', 'Prune service cache', undefined)
+        .option('--view', 'Prune view cache', undefined)
+        .option('--theme', 'Prune theme cache', undefined)
+        .option('--entity', 'Prune entity cache', undefined)
+        .option('--factory', 'Prune factory cache', undefined)
+        .option('--migration', 'Prune migration cache', undefined)
+        .option('--repository', 'Prune repository cache', undefined)
+        .option('--seeder', 'Prune seeder cache', undefined)
+        .option('--enum', 'Prune enum cache', undefined)
+        .option('--all', 'Prune all caches', undefined)
+        .action(async (actions: string) => {
+            await initializeCli();
+            const directories = Dictionary.directories();
+            // const slots: Record<string, string> = {}
+
+            Object.entries(actions)
+                .forEach(([key, value]) => {
+                    if (directories[key] && value) {
+                        const directory = path.join(Vauban.appDir, Vauban.cacheDir, directories[key]);
+
+                        if (fs.existsSync(directory)) {
+                            DirectoryManager.prune(directory)
+                            Logger.success('Prune', `Pruned ${directories[key]}`)
+                        }
+
+                    }
+                })
+
+            ;
+        });
+
+
     // make
-    //     .name('api')
-    //     .command('api')
-    //     .description('Create API endpoint')
-    //     .argument('<string>', 'API endpoint name')
-    //     .action((name: string) => {
-    //         console.log('Command not implemented yet :', name)
-    //     });
+    //     .name('Database')
+    //     .command('db:migration')
+    //     .description('Vauban Database Migration')
+    //     .argument('<name>', 'Migration name')
+    //     .action(async (name: string) => {
+    //         await initializeCli();
+    //         const migrationsDir = path.join(Vauban.appDir, Vauban.config.$.directories?.migrations!)
     //
-    // make
-    //     .name('action')
-    //     .command('action')
-    //     .description('Create a server action')
-    //     .argument('<string>', 'Server action name')
-    //     .action((name: string) => {
-    //         console.log('Command not implemented yet :', name)
+    //         execSync(`npx typeorm migration:create ${migrationsDir}/${TextUtility.camelCase(name)}`)
     //     });
-    //
-    // make
-    //     .name('component')
-    //     .command('component')
-    //     .description('Create a component')
-    //     .argument('<string>', 'component name')
-    //     .action((name: string) => {
-    //         console.log('Command not implemented yet :', name)
-    //     });
-    //
-    // make
-    //     .name('config')
-    //     .command('config')
-    //     .description('Create a config')
-    //     .argument('<string>', 'config name')
-    //     .action((name: string) => {
-    //         console.log('Command not implemented yet :', name)
-    //     });
-    //
-    // make
-    //     .name('helper')
-    //     .command('helper')
-    //     .description('Create a helper')
-    //     .argument('<string>', 'helper name')
-    //     .action((name: string) => {
-    //         console.log('Command not implemented yet :', name)
-    //     });
-    //
-    // make
-    //     .name('service')
-    //     .command('service')
-    //     .description('Create a service')
-    //     .argument('<string>', 'service name')
-    //     .action((name: string) => {
-    //         console.log('Command not implemented yet :', name)
-    //     });
-    //
-    // make
-    //     .name('view')
-    //     .command('view')
-    //     .description('Create a view')
-    //     .argument('<string>', 'view name')
-    //     .action((name: string) => {
-    //         console.log('Command not implemented yet :', name)
-    //     });
+
 
     make.parse(argv);
 

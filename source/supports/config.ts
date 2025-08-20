@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import type {IModularDefaultSource} from "../types/module.js";
-import {Collection, type ICollectionScheme} from "@protorians/core";
+import {Collection, FileUtility, type ICollectionScheme} from "@protorians/core";
 import {IConfiguration, IConfigurationOptions} from "../types/configs.js";
 import {HMR} from "./hmr.js";
 import {NonPartial} from "../types/utils.js";
@@ -19,7 +19,7 @@ export async function loadConfiguration(source: string, loader: ConfigurationLoa
         }
         return HMR.import<IModularDefaultSource>(source);
     } else if (loader === ConfigurationLoader.JSON) {
-        return JSON.parse(fs.readFileSync(source, 'utf8'));
+        return FileUtility.JsonParser(fs.readFileSync(source, 'utf8'));
     } else if (loader === ConfigurationLoader.YAML) {
         const fileContents = fs.readFileSync('config.yml', 'utf8');
         return yaml.load(fileContents);
@@ -30,6 +30,8 @@ export async function loadConfiguration(source: string, loader: ConfigurationLoa
 
 export class Configuration<T extends ICollectionScheme> extends Collection<T> implements IConfiguration<T> {
 
+    protected _current: T = {} as T;
+
     constructor(
         public readonly source: string,
         public readonly options: IConfigurationOptions,
@@ -38,10 +40,18 @@ export class Configuration<T extends ICollectionScheme> extends Collection<T> im
     }
 
     get $(): NonPartial<T> {
-        return this.export() as NonPartial<T>;
+        const config: any = this._current;
+
+        for (const [key, value] of Object.entries(this.export())) {
+            config[key] = value || config[key] || undefined as any;
+        }
+
+        return config as NonPartial<T>;
     }
 
     async sync(_config: T = {} as T): Promise<this> {
+        this._current = {...this._current, ..._config};
+
         const loaded = await loadConfiguration(this.source, this.options.loader)
         let entries: T = {} as T;
 

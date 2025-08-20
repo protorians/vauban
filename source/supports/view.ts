@@ -117,8 +117,8 @@ export class BackendView implements IBackendView {
                 /{{Vauban.Requirement.Body}}/gi,
                 [
                     !isProduction
-                     ? `<script type="module" vauban:view="${this.id}" src="${this.path(ViewFragment.Main)}"></script>`
-                     : `<script type="module" vauban:view="${this.id}" src="./${ViewFragment.Main}.js"></script>`,
+                        ? `<script type="module" vauban:view="${this.id}" src="${this.path(ViewFragment.Main)}"></script>`
+                        : `<script type="module" vauban:view="${this.id}" src="./${ViewFragment.Main}.js"></script>`,
 
                     !isProduction
                         ? `<script type="module">const m = "message", e = "addEventListener"; (new WebSocket('ws://${this.options.server?.options.host || 'localhost'}:${this.options.server?.options.port || '80'}${VaubanUri.hmrWebSocket}'))[e](m, e =>{ e = JSON.parse(e.data||'{}'); (typeof e.type === 'string' && typeof e.file === 'string' && e.type === "hmr") ? window.location.reload() : void(0); }) </script>`
@@ -169,11 +169,12 @@ export class BackendView implements IBackendView {
     }
 
     static get directory(): string {
-        return path.join(Vauban.appDir, Vauban.cacheDir, Vauban.directories.views!)
+        const directories = {...Vauban.directories, ...(Vauban.config.$?.directories || {})};
+        return path.join(Vauban.appDir, Vauban.cacheDir, directories.views!)
     }
 
     static createMain(output: string, basename?: string): typeof this {
-        FileManager.create(output, this.preset(basename||'index.js'))
+        FileManager.create(output, this.preset(basename || 'index.js'))
         return this;
     }
 

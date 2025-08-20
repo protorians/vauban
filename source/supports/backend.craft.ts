@@ -1,7 +1,8 @@
+import {TextUtility} from "@protorians/core";
 import {CraftArtifact} from "../enums/craft.js";
 import {IBackendCraftingTemplate} from "../types/index.js";
 import {Vauban} from "./vauban.js";
-import {camelCase, unCamelCase} from "@protorians/core"
+import {Utility} from "./utility.js";
 import path from "node:path";
 
 
@@ -31,10 +32,105 @@ export class BackendCraft {
      */
     static action(identifier: string): IBackendCraftingTemplate {
         return {
-            filename: `${unCamelCase(identifier)}.action.ts`,
-            directory: Vauban.config.$.directories?.actions!,
+            filename: `${TextUtility.unCamelCase(identifier)}.action.ts`,
+            directory: Vauban.config.$.directories?.actions || Vauban._config.directories?.actions!,
             code: `"use server";
-export async function ${camelCase(`${identifier}-action`)}(): Promise<any>{}
+export async function ${TextUtility.camelCase(`${identifier}-action`)}(): Promise<any>{}
+`
+        }
+    }
+
+    static enum(identifier: string): IBackendCraftingTemplate {
+        return {
+            filename: `${TextUtility.unCamelCase(identifier)}.enum.ts`,
+            directory: Vauban.config.$.directories?.enums! || Vauban._config.directories?.enums!,
+            code: `
+export enum ${TextUtility.camelCase(`${identifier}-enum`)}{}
+`
+        }
+    }
+
+
+    static entity(identifier: string): IBackendCraftingTemplate {
+        return {
+            filename: `${TextUtility.unCamelCase(identifier)}.entity.ts`,
+            directory: Vauban.config.$.directories?.entities! || Vauban._config.directories?.entities!,
+            code: `import {Entity} from "@protorians/vauban/orm";
+import {UuidTable} from "@protorians/vauban/database";
+
+@Entity()
+export class ${TextUtility.camelCase(identifier)} extends UuidTable{
+}
+`
+        }
+    }
+
+    static factory(identifier: string): IBackendCraftingTemplate {
+        return {
+            filename: `${TextUtility.unCamelCase(identifier)}.factory.ts`,
+            directory: Vauban.config.$.directories?.factories! || Vauban._config.directories?.factories!,
+            code: `
+export default class ${TextUtility.camelCase(`${identifier}-factory`)}{
+}
+`
+        }
+    }
+
+    static migration(identifier: string): IBackendCraftingTemplate {
+        const timestamp = Utility.datetime();
+        const name = TextUtility.unCamelCase(identifier);
+
+        return {
+            filename: `${timestamp}-${name}.migration.ts`,
+            directory: Vauban.config.$.directories?.migrations! || Vauban._config.directories?.migrations!,
+            code: `import { MigrationInterface, QueryRunner } from "@protorians/vauban/orm"
+
+export default class ${TextUtility.camelCase(`${identifier}-migration-${timestamp}`)} implements MigrationInterface{
+
+    async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            \`ALTER TABLE "${name}" \`,
+        )
+    }
+
+    async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(
+            \`ALTER TABLE "${name}" \`,
+        )
+    }
+
+}
+`
+        }
+    }
+
+    static repository(identifier: string): IBackendCraftingTemplate {
+        const entityName = TextUtility.camelCase(`${identifier}`);
+        const entityDir = Vauban.config.$.directories?.entities! || Vauban._config.directories?.entities!;
+        const repositoryDir = Vauban.config.$.directories?.repositories! || Vauban._config.directories?.repositories!;
+
+
+        return {
+            filename: `${TextUtility.unCamelCase(identifier)}.repository.ts`,
+            directory: Vauban.config.$.directories?.repositories! || Vauban._config.directories?.repositories!,
+            code: `import {RepositoryManager} from "@protorians/vauban/database";
+import Database from "../index.js";
+import {${entityName}} from "${path.join(path.relative(repositoryDir, entityDir), `${TextUtility.unCamelCase(identifier)}.entity.js`)}";
+
+export class ${TextUtility.camelCase(`${identifier}-repository`)} extends RepositoryManager<${entityName}>{
+    protected _context = Database.context().getRepository(${entityName});
+}
+`
+        }
+    }
+
+    static seeder(identifier: string): IBackendCraftingTemplate {
+        return {
+            filename: `${TextUtility.unCamelCase(identifier)}.seeder.ts`,
+            directory: Vauban.config.$.directories?.seeders! || Vauban._config.directories?.seeders!,
+            code: `
+export default class ${TextUtility.camelCase(`${identifier}-seeder`)}{
+}
 `
         }
     }
@@ -48,10 +144,10 @@ export async function ${camelCase(`${identifier}-action`)}(): Promise<any>{}
      */
     static component(identifier: string): IBackendCraftingTemplate {
         return {
-            filename: `${unCamelCase(identifier)}.component.ts`,
-            directory: Vauban.config.$.directories?.components!,
+            filename: `${TextUtility.unCamelCase(identifier)}.component.ts`,
+            directory: Vauban.config.$.directories?.components! || Vauban._config.directories?.components!,
             code: `import {type IWidgetNode, Layer} from "@protorians/widgets";
-export function ${camelCase(`${identifier}-component`)}(): IWidgetNode<any, any>{
+export function ${TextUtility.camelCase(`${identifier}-component`)}(): IWidgetNode<any, any>{
     return Layer({
         children: undefined,
     })
@@ -69,10 +165,10 @@ export function ${camelCase(`${identifier}-component`)}(): IWidgetNode<any, any>
      */
     static helper(identifier: string): IBackendCraftingTemplate {
         return {
-            filename: `${unCamelCase(identifier)}.helper.ts`,
-            directory: Vauban.config.$.directories?.helpers!,
+            filename: `${TextUtility.unCamelCase(identifier)}.helper.ts`,
+            directory: Vauban.config.$.directories?.helpers! || Vauban._config.directories?.helpers!,
             code: `
-export function ${camelCase(`${identifier}-helper`)}(){
+export function ${TextUtility.camelCase(`${identifier}-helper`)}(){
 }
 `
         }
@@ -87,10 +183,10 @@ export function ${camelCase(`${identifier}-helper`)}(){
      */
     static config(identifier: string): IBackendCraftingTemplate {
         return {
-            filename: `${unCamelCase(identifier)}.config.ts`,
-            directory: Vauban.config.$.directories?.configs!,
+            filename: `${TextUtility.unCamelCase(identifier)}.config.ts`,
+            directory: Vauban.config.$.directories?.configs! || Vauban._config.directories?.configs!,
             code: `
-export const ${camelCase(`${identifier}-config`)} = {
+export const ${TextUtility.camelCase(`${identifier}-config`)} = {
 }`
         }
     }
@@ -98,8 +194,8 @@ export const ${camelCase(`${identifier}-config`)} = {
 
     static theme(identifier: string): IBackendCraftingTemplate {
         return {
-            filename: `${unCamelCase(identifier)}.theme.ts`,
-            directory: Vauban.config.$.directories?.themes!,
+            filename: `${TextUtility.unCamelCase(identifier)}.theme.ts`,
+            directory: Vauban.config.$.directories?.themes! || Vauban._config.directories?.themes!,
             code: `import {ColorPalette} from "@protorians/widgets";
 import {KatonTheme} from "@widgetui/katon-theme";
 
@@ -133,7 +229,7 @@ ColorPalette.dark = {
     black: 'oklch(0% 0 0)',
 }
 
-export const ${camelCase(`${identifier}-theme`)} = (new KatonTheme).attach('html');`
+export const ${TextUtility.camelCase(`${identifier}-theme`)} = (new KatonTheme).attach('html');`
         }
     }
 
@@ -145,31 +241,26 @@ export const ${camelCase(`${identifier}-theme`)} = (new KatonTheme).attach('html
      * @return {IBackendCraftingTemplate} Returns an object containing the filename, directory, and formatted code for the API.
      */
     static api(identifier: string): IBackendCraftingTemplate {
-        return {
-            filename: `${unCamelCase(identifier)}.api.ts`,
-            directory: Vauban.config.$.directories?.api!,
-            code: `import {ApiController} from "@protorians/vauban";
 
-export default class ${camelCase(`${identifier}-api`)} extends ApiController {
-    /**
-     * Get Method
-     */
-    async Get(): Promise<any>{}
+
+        return {
+            filename: `${TextUtility.unCamelCase(identifier)}.api.ts`,
+            directory: Vauban.config.$.directories?.api! || Vauban._config.directories?.api!,
+            code: `import {ApiController, Controllable, Routable} from "@protorians/vauban";
+
+
+@Controllable({
+    path: "/${TextUtility.camelCase(`${identifier}`)}",
+    methods: ["GET", "POST", "PUT", "DELETE"]
+})
+export default class ${TextUtility.camelCase(`${identifier}-api`)} extends ApiController {
+
+    @Routable({
+        path: "/hello",
+        method: "GET"
+    })
+    async hello(): Promise<any>{}
     
-    /**
-     * Post Method
-     */
-    async Post(): Promise<any>{}
-    
-    /**
-     * Put Method
-     */
-    async Put(): Promise<any>{}
-    
-    /**
-     * Delete Method
-     */
-    async Delete(): Promise<any>{}
 }`
         }
     }
@@ -183,11 +274,11 @@ export default class ${camelCase(`${identifier}-api`)} extends ApiController {
      */
     static service(identifier: string): IBackendCraftingTemplate {
         return {
-            filename: `${unCamelCase(identifier)}.service.ts`,
-            directory: Vauban.config.$.directories?.services!,
-            code: `import {ServiceController} from "@protorians/vauban";
+            filename: `${TextUtility.unCamelCase(identifier)}.service.ts`,
+            directory: Vauban.config.$.directories?.services! || Vauban._config.directories?.services!,
+            code: `import {ServiceManager} from "@protorians/vauban";
 
-export default class ${camelCase(`${identifier}-service`)} extends ServiceController {
+export default class ${TextUtility.camelCase(`${identifier}-service`)} extends ServiceManager {
 }`
         }
     }
@@ -200,10 +291,10 @@ export default class ${camelCase(`${identifier}-service`)} extends ServiceContro
      * @return {IBackendCraftingTemplate} An object containing the filename, directory, and code for the generated template.
      */
     static view(identifier: string): IBackendCraftingTemplate {
-        const pathname = identifier.split('/').map(i => unCamelCase(i)).join('/')
+        const pathname = identifier.split('/').map(i => TextUtility.unCamelCase(i)).join('/')
         return {
             filename: path.join(`${pathname}`, 'index.ts'),
-            directory: Vauban.config.$.directories?.views!,
+            directory: Vauban.config.$.directories?.views! || Vauban._config.directories?.views!,
             code: `import {Layer, Override, StatefulView, Text} from "@protorians/widgets"
 
 export default class extends StatefulView {

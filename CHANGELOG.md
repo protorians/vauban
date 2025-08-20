@@ -1,5 +1,62 @@
 # @protorians/paladin
 
+## 0.3.0
+
+### Minor Changes
+
+- Refactoring
+
+### Patch Changes
+
+- Updated dependencies
+  - @protorians/arcane-core@0.3.0
+  - @protorians/widgets@0.9.0
+  - @protorians/core@0.6.0
+
+## 0.2.0
+
+### Minor Changes
+
+- Fix bugs and add features
+
+### Patch Changes
+
+- Updated dependencies
+  - @protorians/arcane-core@0.2.0
+  - @protorians/widgets@0.8.0
+  - @protorians/core@0.5.0
+
+## 0.1.6
+
+### Patch Changes
+
+- Sync Version and Dependancies
+- Updated dependencies
+  - @protorians/arcane-core@0.1.6
+  - @protorians/widgets@0.6.8
+  - @protorians/core@0.4.1
+
+## 0.1.5
+
+### Minor Changes
+
+- Refactor utilities into distinct namespaces for clarity
+
+### Patch Changes
+
+- Updated dependencies
+  - @protorians/widgets@0.7.0
+
+## 0.1.4
+
+### Patch Changes
+
+- Sync versions
+- Updated dependencies
+  - @protorians/arcane-core@0.1.5
+  - @protorians/widgets@0.6.6
+  - @protorians/core@0.3.8
+
 ## 0.1.3
 
 ### Patch Changes

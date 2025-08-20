@@ -164,17 +164,20 @@ export class BackendBuilder {
 
     static async caching() {
         return new Promise<void>(async (resolve, reject) => {
-            const spinner = await ProgressSpinner.create('Caching...')
+            const spinner = await ProgressSpinner.create('Build caches...');
+            const directories = {...Vauban.directories, ...Vauban.config.$.directories};
+            const sourcedir = path.join(Vauban.appDir, directories.root || '');
 
             try {
-                exec(`cd ${Vauban.appDir} && npx tsc`, (err, stdout) => {
+
+                exec(`cd ${sourcedir} && npx tsc`, (err, stdout) => {
                     spinner.stop();
                     if (err) {
                         Logger.error('App', 'Build failed, check your project build');
                         Logger.error('Stack', stdout);
                         process.exit(1);
                     }
-                    // Logger.info("App", 'Ready!');
+                    // Logger.info("Task", 'Cache built successfully!');
                     resolve()
                 })
             } catch (e) {

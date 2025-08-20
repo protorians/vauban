@@ -1,5 +1,5 @@
 import {IConfiguration} from "../types/configs.js";
-import {IServerBootstrapper, IBackendConfig, IBackendDirectories} from "../types/index.js";
+import {IBackendConfig, IBackendDirectories, IServerBootstrapper} from "../types/index.js";
 import {Backend} from "./backend.js";
 import {Configuration} from "./config.js";
 import path from "node:path";
@@ -46,7 +46,7 @@ export class Vauban {
             host: 'localhost',
             port: parseInt((process.env.PORT || 3000).toString()),
             directories: {
-                source: "./source",
+                root: "./source",
                 public: "./source/public",
                 actions: "./source/actions",
                 api: "./source/api",
@@ -63,7 +63,7 @@ export class Vauban {
                 factories: "./source/database/factories",
                 migrations: "./source/database/migrations",
                 repositories: "./source/database/repositories",
-                schemas: "./source/database/schemas",
+                // schemas: "./source/database/schemas",
                 seeders: "./source/database/seeders",
                 components: "./source/components",
                 helpers: "./source/helpers",
@@ -71,15 +71,21 @@ export class Vauban {
                 services: "./source/services",
                 themes: "./source/themes",
                 views: "./source/views",
+                enums: "./source/enums",
+                types: "./source/types",
             }
         }
     }
 
     static get directories(): Partial<IBackendDirectories> {
-        return {
-            ...(this._config).directories,
-            ...(this.config.export().directories || {}),
+
+        const directories = {...this._config.directories}
+
+        for (const [key, value] of Object.entries(this.config?.export()?.directories || {})) {
+            directories[key] = value || directories[key] || undefined;
         }
+
+        return this._config.directories || {}
     }
 
     static get configType() {
@@ -100,6 +106,8 @@ export class Vauban {
                 {loader: type,}
             )
         ).sync(this._config);
+
+        this.config.$.directories = {...this._config.directories, ...this.config.$.directories};
         return this.config;
     }
 
