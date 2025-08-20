@@ -60,8 +60,8 @@ const server = new Backend({
 });
 
 // Démarrer le serveur
-server.start().then(() => {
-  console.log('Serveur démarré avec succès !');
+server.run((app) => {
+  console.log('Serveur démarré avec succès !', app);
 });
 ```
 

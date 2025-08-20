@@ -1,7 +1,7 @@
 {
   "name": "@protorians/vauban",
   "displayName": "Protorians Vauban",
-  "version": "0.1.7",
+  "version": "0.3.0",
   "description": "",
   "main": "build/index.js",
   "type": "module",
@@ -14,7 +14,9 @@
   },
   "exports": {
     ".": "./build/index.js",
-    "./common/*": "./build/common/*"
+    "./common/*": "./build/common/*",
+    "./database": "./build/database/index.js",
+    "./orm": "./build/externals/typeorm.js"
   },
   "keywords": [
     "protorians",
@@ -41,13 +43,23 @@
     "esbuild": "^0.25.2",
     "fastify": "^5.2.2",
     "js-yaml": "^4.1.0",
+    "mongodb": "^5.2.0",
+    "mssql": "^11.0.1",
+    "mysql": "^2.18.1",
+    "oracledb": "^6.8.0",
+    "pg": "^8.16.2",
+    "postcss": "^8.5.6",
+    "reflect-metadata": "^0.2.2",
     "socket.io-client": "^4.8.1",
+    "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
+    "typeorm": "^0.3.25",
     "vite": "^6.2.5",
     "ws": "^8.18.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.14.0",
     "rollup-plugin-terser": "^7.0.2",
     "typescript": "5.8.3"
   }

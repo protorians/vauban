@@ -28,6 +28,21 @@ export class DirectoryManager {
         })
     }
 
+
+    static prune(directory: string): Promise<void> {
+        return new Promise<void>(async (resolve, reject) => {
+            try {
+                if (directory !== Vauban.appDir && directory !== Vauban.directory && fs.existsSync(directory)) {
+                    fs.rmSync(directory, {recursive: true, force: true});
+                    fs.mkdirSync(directory, {recursive: true});
+                }
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
+        })
+    }
+
     static scan(
         directory: string,
         options?: {

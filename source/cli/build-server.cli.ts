@@ -19,7 +19,7 @@ export async function buildServerCli({prod}: IBuildServerOption) {
 
     const directories = Vauban.directories;
     const views = path.join(Vauban.appDir, Vauban.cacheDir, directories.views!)
-    const files = BackendMapper.scan(views)
+    const files = await BackendMapper.scan(views)
     files.unshift('.')
 
     await BackendBuilder.bulk(views, files, {loader: 'js'})
