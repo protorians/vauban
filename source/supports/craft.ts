@@ -15,14 +15,12 @@ export class Craft implements ICraft {
         return this._options;
     }
 
-    constructor(
-        protected readonly _options: ICraftOptions
-    ) {
-
+    constructor(protected readonly _options: ICraftOptions) {
     }
 
     async build(type: CraftArtifact, identifier: string) {
         const spinner = await ProgressSpinner.create(`${type.toUpperCase()}: ${identifier} crafting...`)
+
         return new Promise<IBackendCraftingTemplate | undefined>(async (resolve, reject) => {
             const label = `${identifier} ${type.toUpperCase()}`
 
@@ -57,7 +55,7 @@ export class Craft implements ICraft {
         })
     }
 
-    async start() {
+    async start(): Promise<void> {
         for (const name of Object.keys(this._options.fragments)) {
             await this.build(name as CraftArtifact, this._options.identifier);
         }

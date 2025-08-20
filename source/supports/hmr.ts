@@ -1,7 +1,7 @@
 import {build, BuildResult} from "esbuild";
 import path from "node:path";
 import {Vauban} from "./vauban.js";
-import {exec} from "node:child_process";
+import {spawn} from "node:child_process";
 import * as fs from "node:fs";
 import {HMRContext} from "../enums/hmr.js";
 import {IHMRCompilate} from "../types/index.js";
@@ -85,19 +85,31 @@ export class HMR {
     }
 
     static watcher() {
-        const directories = Vauban.directories;
-        const sourcedir = path.join(Vauban.appDir, directories.source || 'source');
-        // const outputDir = path.join(Vauban.appDir, Vauban.cacheDir, directories.source || 'source')
+        const directories = {...Vauban.directories, ...Vauban.config.$.directories};
+        const sourcedir = path.join(Vauban.appDir, directories.root || '');
+        // const outputDir = path.join(Vauban.appDir, Vauban.cacheDir, directories.root || 'source')
 
-        exec(
-            `cd ${sourcedir} && npx tsc --watch`,
-            (error, stdout, stderr) => {
-                if (error) Logger.error('Error', error)
-                Logger.error('ERROR', stderr)
-                Logger.say('I', stdout)
-            }
-        );
+        spawn('cd', [
+            sourcedir,
+            '&&',
+            'npx tsc --watch'
+        ], {
+            shell: true,
+            // stdio: 'inherit',
+        })
 
+        // exec(
+        //     `cd ${sourcedir} && echo "Watching..." && npx tsc --watch`,
+        //     (error, stdout, stderr) => {
+        //         if (error) {
+        //             Logger.error('Error', error)
+        //             Logger.error('ERROR', stderr)
+        //             Logger.say('I', stdout)
+        //         }
+        //
+        //         Logger.info('Watcher', 'triggered')
+        //     },
+        // );
 
         // chokidar
         //     .watch(`${sourcedir}`, {persistent: true})
@@ -106,10 +118,11 @@ export class HMR {
     }
 
 
-    static gateway(vite: ViteDevServer, socket: WebSocket.WebSocket, fileHost: string) {
+    static gateway(vite: ViteDevServer, socket: WebSocket.WebSocket, fileHost: string, onUpdate?: (file: string) => Promise<void>) {
         vite.watcher.on('change', async (file) => {
             if (file !== fileHost && file.endsWith('.js')) {
                 await HMR.replace(file)
+                await onUpdate?.(file)
                 socket.send(JSON.stringify({type: 'hmr', action: 'reload', file,}))
             }
         })

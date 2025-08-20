@@ -34,7 +34,7 @@ export type IBackendMethods = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 export interface IBackendDirectories {
     public: string;
-    source: string;
+    root: string;
     actions: string;
     api: string;
     assets: string;
@@ -50,7 +50,7 @@ export interface IBackendDirectories {
     factories: string;
     migrations: string;
     repositories: string;
-    schemas: string;
+    // schemas: string;
     seeders: string;
     components: string;
     helpers: string;
@@ -58,7 +58,25 @@ export interface IBackendDirectories {
     services: string;
     themes: string;
     views: string;
+    enums: string;
+    types: string;
 }
+
+export type IBackendDirectoriesKeys =
+    'api'
+    | 'action'
+    | 'component'
+    | 'config'
+    | 'helper'
+    | 'service'
+    | 'view'
+    | 'theme'
+    | 'entity'
+    | 'factory'
+    | 'migration'
+    | 'repository'
+    | 'seeder'
+    | 'enum';
 
 export interface IBackendConfig extends ICollectionScheme {
     name?: string;

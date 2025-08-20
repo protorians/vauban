@@ -1,5 +1,5 @@
 import type {IMiddlewareCallable} from "./middleware.js";
-import type {IRoutePayload} from "./route.js";
+import type {IRouteThirdPayload} from "./route.js";
 import type { IBackendSignalCallable } from "./backend.js";
 
 
@@ -7,7 +7,7 @@ import type { IBackendSignalCallable } from "./backend.js";
 export interface IPluginOptions {
     name: string;
 
-    route?: IRoutePayload;
+    route?: IRouteThirdPayload;
 
     middleware?: IMiddlewareCallable;
 

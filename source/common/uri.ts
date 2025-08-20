@@ -10,4 +10,7 @@ export class VaubanUri{
     static packages: string = '/__vauban__/packages';
     static fileSystem: string = '/__vauban__/fs';
 
+
+    static api: string = '/api/*';
+
 }

@@ -21,11 +21,12 @@ import {VaubanUri} from '../common/uri.js';
 import {ServerRuntimeMode} from "../enums/server.js";
 import activateVerbose = ArcaneEnv.activateVerbose;
 import deactivateVerbose = ArcaneEnv.deactivateVerbose;
-// import {fastifyStatic} from "@fastify/static";
 import {createServer as createViteServer} from 'vite'
 import fastifyExpress from "@fastify/express";
 import fs from "node:fs";
 import {BackendView} from './view.js';
+import {RoutesWorker} from "../http/routes-worker.js";
+
 
 // const __dirname = import.meta.dirname;
 const __filename = import.meta.filename;
@@ -67,13 +68,14 @@ export class Backend implements IBackend {
     async start(bootstrapper?: IServerBootstrapper): Promise<typeof this> {
         await Vauban.initialize();
 
-        Logger.magenta('MODE', process.argv, Vauban.config.$.mode)
+        Logger.magenta('MODE', Vauban.config.$.mode)
 
         const isProduction: boolean = Vauban.config.$.mode === ServerRuntimeMode.Production;
-        const directories = Vauban.directories;
+        const directories = {...Vauban.directories, ...Vauban.config.$.directories};
+        const apiDir = path.join(Vauban.appDir, Vauban.cacheDir, Vauban.config.$.directories?.api || directories.api!);
         const viteConfigFile = path.join(Vauban.directory, 'resources', 'vite.config.ts')
         const vite = await createViteServer({
-            root: path.resolve(Vauban.appDir, directories.source || ''),
+            root: path.resolve(Vauban.appDir, directories.root || ''),
             appType: 'custom',
             server: {
                 middlewareMode: true,
@@ -81,7 +83,6 @@ export class Backend implements IBackend {
             },
             configFile: fs.existsSync(viteConfigFile) ? viteConfigFile : undefined
         })
-
 
         /**
          * Registry socket
@@ -146,9 +147,16 @@ export class Backend implements IBackend {
 
 
         /**
+         * Api Routes
+         */
+        Logger.highlight('task', 'Deploy API Routes...')
+        await RoutesWorker.autoload(this, apiDir);
+
+
+        /**
          * @Route Server side rendering VIEWS
          */
-        this.instance.get('/*', async (req, reply) => {
+        this.instance.all('/*', async (req, reply) => {
             const uri = req.raw.url!;
             try {
 
@@ -174,18 +182,32 @@ export class Backend implements IBackend {
                     }
                 }
 
-
                 reply.status(404)
                     .type('application/json')
-                    .send({status: false, message: 'No work found', uri});
+                    .send({status: false, message: 'NotFound'});
 
             } catch (e: any) {
                 Logger.error('error', e)
                 reply.status(500)
-                    .send({status: false, cause: e.message || e.stack || e});
+                    .send({
+                        status: false,
+                        message: e.message || e,
+                        stack: !isProduction ? e.stack || null : undefined
+                    });
             }
 
         })
+
+
+        // if (!isProduction) {
+            // vite.watcher.on('change', async (file) => {
+            //     if (file.endsWith('.js')) {
+            //         console.log('change', file)
+            //
+            //         // await HMR.replace(file)
+            //     }
+            // })
+        // }
 
 
         /**
@@ -194,9 +216,13 @@ export class Backend implements IBackend {
         this.instance.listen({port: this.options.port}, (err) => {
             if (err) {
                 Logger.error('error', err);
-                process.exit(1);
+                // process.exit(1);
             }
 
+            /**
+             * @DevMode
+             * Trigger HMR watcher
+             */
             if (!isProduction) HMR.watcher()
 
             /**
