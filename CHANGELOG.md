@@ -1,5 +1,15 @@
 # @protorians/paladin
 
+## 0.1.7
+
+### Patch Changes
+
+- ready
+- Updated dependencies
+  - @protorians/arcane-core@0.1.7
+  - @protorians/widgets@0.6.9
+  - @protorians/core@0.4.2
+
 ## 0.1.6
 
 ### Patch Changes
