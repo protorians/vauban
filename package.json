@@ -1,7 +1,7 @@
 {
   "name": "@protorians/vauban",
   "displayName": "Protorians Vauban",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "",
   "main": "build/index.js",
   "type": "module",
@@ -61,6 +61,6 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.14.0",
     "rollup-plugin-terser": "^7.0.2",
-    "typescript": "5.8.3"
+    "typescript": "^5.9.2"
   }
 }
